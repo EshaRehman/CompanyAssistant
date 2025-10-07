@@ -1,0 +1,167 @@
+{
+  "name": "Apec Digital Solutions",
+  "tagline": "AI-Powered Digital Transformation & Custom Software Solutions",
+  "overview": "Apec Digital Solutions is a leading technology company specializing in AI/ML solutions, custom software development, and digital transformation services. Founded in 2018, we help businesses leverage cutting-edge technology to automate operations, enhance customer experiences, and drive sustainable growth.",
+  "founded": 2018,
+  "headquarters": "San Francisco, CA, USA",
+  "team_size": "50+ engineers and consultants",
+  "services": [
+    "Custom AI/ML Solutions",
+    "Enterprise Software Development",
+    "Cloud Architecture & Migration",
+    "Mobile App Development (iOS/Android)",
+    "Web Application Development",
+    "Digital Transformation Consulting",
+    "Technical Staff Augmentation",
+    "API Development & Integration",
+    "DevOps & Infrastructure",
+    "UI/UX Design"
+  ],
+  "ai_ml_services": {
+    "llm_integrations": "ChatGPT and LLM integrations, custom AI assistants, RAG applications",
+    "ai_agents": "Workflow automation with LangChain/LangGraph, multi-agent systems",
+    "machine_learning": "Predictive analytics, classification, recommendation systems",
+    "nlp": "Sentiment analysis, text classification, language translation",
+    "computer_vision": "Image classification, object detection, OCR"
+  },
+  "technologies": {
+    "ai_ml": [
+      "OpenAI GPT-4",
+      "LangChain",
+      "LangGraph",
+      "TensorFlow",
+      "PyTorch",
+      "Scikit-learn",
+      "Hugging Face",
+      "ChromaDB",
+      "Pinecone"
+    ],
+    "backend": [
+      "Python (FastAPI, Django, Flask)",
+      "Node.js (Express, NestJS)",
+      "Java (Spring Boot)",
+      "Go",
+      "GraphQL",
+      "REST APIs"
+    ],
+    "frontend": [
+      "React",
+      "Next.js",
+      "Vue.js",
+      "TypeScript",
+      "Tailwind CSS",
+      "React Native",
+      "Flutter"
+    ],
+    "cloud": [
+      "AWS (Lambda, ECS, S3, RDS)",
+      "Google Cloud Platform",
+      "Microsoft Azure",
+      "Docker",
+      "Kubernetes",
+      "Terraform"
+    ],
+    "databases": [
+      "PostgreSQL",
+      "MongoDB",
+      "Redis",
+      "MySQL",
+      "Elasticsearch",
+      "ChromaDB"
+    ]
+  },
+  "industries_served": [
+    "E-commerce & Retail",
+    "Healthcare & Telemedicine",
+    "Financial Services",
+    "Manufacturing & Supply Chain",
+    "Education & EdTech",
+    "Real Estate & PropTech",
+    "SaaS & Technology Companies"
+  ],
+  "sample_projects": [
+    {
+      "title": "AI Customer Service Platform",
+      "industry": "E-commerce",
+      "description": "Built intelligent chatbot using GPT-4 and RAG technology that automated 80% of support tickets, reducing response time by 90% and saving 60% in support costs.",
+      "technologies": ["OpenAI GPT-4", "LangChain", "React", "Node.js", "PostgreSQL"],
+      "results": "90% faster response time, 60% cost savings, 91% customer satisfaction"
+    },
+    {
+      "title": "Supply Chain Optimization System",
+      "industry": "Manufacturing",
+      "description": "ML-powered demand forecasting and inventory optimization system that reduced stockouts by 40% and saved $2M annually.",
+      "technologies": ["Python", "TensorFlow", "PostgreSQL", "AWS"],
+      "results": "$2M annual savings, 40% fewer stockouts, 15% better forecast accuracy"
+    },
+    {
+      "title": "HIPAA-Compliant Telemedicine Platform",
+      "industry": "Healthcare",
+      "description": "Secure telemedicine platform with video consultations, EHR integration, and e-prescriptions handling 10,000+ monthly consultations.",
+      "technologies": ["React Native", "Node.js", "WebRTC", "PostgreSQL", "AWS"],
+      "results": "10,000+ monthly consultations, 95% satisfaction, HIPAA compliant"
+    }
+  ],
+  "key_differentiators": [
+    "AI-First Approach - Every solution incorporates intelligent automation",
+    "Rapid Prototyping - MVP in 4-6 weeks",
+    "Full-Stack Expertise - From UI to ML models to cloud infrastructure",
+    "Agile Methodology - 2-week sprints with regular demos",
+    "Transparent Pricing - No hidden costs",
+    "Post-Launch Support - Ongoing maintenance included"
+  ],
+  "pricing": {
+    "project_based": {
+      "small_projects": "$25,000 - $75,000 (4-8 weeks)",
+      "medium_projects": "$75,000 - $200,000 (2-4 months)",
+      "large_projects": "$200,000+ (4-12 months)"
+    },
+    "staff_augmentation": {
+      "junior_developer": "$4,000/month",
+      "mid_level_developer": "$6,000/month",
+      "senior_developer": "$8,000/month",
+      "ai_ml_engineer": "$10,000/month",
+      "tech_lead": "$12,000/month",
+      "solutions_architect": "$15,000/month"
+    },
+    "consulting": {
+      "hourly_rate": "$200-350/hour",
+      "retainer": "$5,000-25,000/month"
+    }
+  },
+  "engagement_process": [
+    "1. Initial Consultation (Free - 30 minutes)",
+    "2. Requirements Discovery (1-2 weeks)",
+    "3. Proposal & Timeline (3-5 days)",
+    "4. Development (Agile 2-week sprints)",
+    "5. Testing & QA",
+    "6. Deployment",
+    "7. Post-Launch Support (30-day warranty + ongoing options)"
+  ],
+  "target_customers": "Mid-size to enterprise companies ($5M+ annual revenue), funded startups ($500K+), businesses looking to leverage AI and automation, organizations needing custom software solutions.",
+  "why_choose_apec": "Unlike traditional development shops, we lead with AI expertise. Every solution we build incorporates intelligent automation. We don't just write code—we solve business problems with cutting-edge technology.",
+  "contact": {
+    "email": "esharehmantech.com",
+    "website": "https://apecdigitalsolutions.com",
+    "consultation": "Schedule a free 30-minute consultation to discuss your project"
+  },
+  "client_testimonials": [
+    {
+      "company": "TechRetail Inc.",
+      "quote": "Apec transformed our e-commerce operations. Their AI recommendation engine increased our conversion rate by 45%.",
+      "role": "CTO"
+    },
+    {
+      "company": "HealthConnect",
+      "quote": "Professional, responsive, and delivered ahead of schedule. The telemedicine platform they built handles 10,000+ consultations monthly.",
+      "role": "CEO"
+    }
+  ],
+  "stats": {
+    "projects_completed": "200+",
+    "client_satisfaction": "95%",
+    "industries_served": "10+",
+    "team_members": "50+",
+    "years_in_business": "Since 2018"
+  }
+}

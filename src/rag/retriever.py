@@ -1,5 +1,5 @@
 """
-Professional RAG System for Apex Digital Solutions
+Professional RAG System for Apec Digital Solutions
 
 Advanced features:
 - Semantic chunking with overlap
@@ -7,12 +7,16 @@ Advanced features:
 - Query expansion (LLM rewrites query)
 - Relevance scoring
 - Source citations
-- Hybrid search (semantic + keyword)
 """
 import os
 import json
 from pathlib import Path
 from typing import List, Dict, Any
+from dotenv import load_dotenv
+
+# CRITICAL: Load .env file FIRST before any OpenAI imports
+load_dotenv()
+
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
@@ -26,7 +30,7 @@ import openai
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 RAG_DOCUMENTS_PATH = PROJECT_ROOT / "rag_documents"
 PERSIST_DIRECTORY = PROJECT_ROOT / os.getenv("CHROMA_PERSIST_DIR", "rag_store")
-COLLECTION_NAME = os.getenv("CHROMA_COLLECTION", "apex_knowledge")
+COLLECTION_NAME = os.getenv("CHROMA_COLLECTION", "apec_knowledge")
 CHUNK_SIZE = int(os.getenv("RAG_CHUNK_SIZE", "1000"))
 CHUNK_OVERLAP = int(os.getenv("RAG_CHUNK_OVERLAP", "200"))
 TOP_K = int(os.getenv("RAG_TOP_K", "5"))
@@ -45,13 +49,6 @@ embeddings = OpenAIEmbeddings(
 class ProfessionalRAG:
     """
     Production-grade RAG system
-    
-    Features:
-    - Smart document chunking
-    - Metadata tracking
-    - Query expansion
-    - Relevance filtering
-    - Source citations
     """
     
     def __init__(self):
@@ -62,7 +59,6 @@ class ProfessionalRAG:
     def _initialize(self):
         """Initialize or load vector store"""
         try:
-            # Check if vector store exists
             if (PERSIST_DIRECTORY / "chroma.sqlite3").exists():
                 print("📚 Loading existing knowledge base...")
                 self.vectorstore = Chroma(
@@ -75,7 +71,6 @@ class ProfessionalRAG:
                 self._build_vectorstore()
             
             if self.vectorstore:
-                # Configure retriever with relevance scoring
                 self.retriever = self.vectorstore.as_retriever(
                     search_type="similarity_score_threshold",
                     search_kwargs={
@@ -102,11 +97,9 @@ class ProfessionalRAG:
         
         print(f"📄 Loaded {len(documents)} documents")
         
-        # Smart chunking with metadata preservation
         chunks = self._chunk_documents(documents)
         print(f"✂️ Created {len(chunks)} chunks")
         
-        # Create vector store
         self.vectorstore = Chroma.from_documents(
             documents=chunks,
             embedding=embeddings,
@@ -125,7 +118,6 @@ class ProfessionalRAG:
             try:
                 loader = TextLoader(str(txt_file), encoding='utf-8')
                 docs = loader.load()
-                # Add metadata
                 for doc in docs:
                     doc.metadata.update({
                         "source": txt_file.name,
@@ -142,7 +134,6 @@ class ProfessionalRAG:
             try:
                 loader = PyPDFLoader(str(pdf_file))
                 docs = loader.load()
-                # Add metadata
                 for i, doc in enumerate(docs):
                     doc.metadata.update({
                         "source": pdf_file.name,
@@ -156,24 +147,23 @@ class ProfessionalRAG:
                 print(f"  ✗ Error loading {pdf_file.name}: {e}")
         
         # Load JSON company info if exists
-        json_file = PROJECT_ROOT / "apex_company_info.json"
+        json_file = PROJECT_ROOT / "apec_company_info.json"
         if json_file.exists():
             try:
                 with open(json_file, 'r', encoding='utf-8') as f:
                     company_data = json.load(f)
                 
-                # Convert JSON to text document
                 content = self._json_to_text(company_data)
                 doc = Document(
                     page_content=content,
                     metadata={
-                        "source": "apex_company_info.json",
+                        "source": "apec_company_info.json",
                         "type": "structured_data",
-                        "filename": "apex_company_info.json"
+                        "filename": "apec_company_info.json"
                     }
                 )
                 documents.append(doc)
-                print(f"  ✓ Loaded apex_company_info.json")
+                print(f"  ✓ Loaded apec_company_info.json")
             except Exception as e:
                 print(f"  ✗ Error loading JSON: {e}")
         
@@ -190,7 +180,6 @@ class ProfessionalRAG:
         
         chunks = text_splitter.split_documents(documents)
         
-        # Add chunk metadata
         for i, chunk in enumerate(chunks):
             chunk.metadata["chunk_id"] = i
             chunk.metadata["chunk_size"] = len(chunk.page_content)
@@ -256,25 +245,13 @@ class ProfessionalRAG:
         use_expansion: bool = True,
         top_k: int = TOP_K
     ) -> List[Dict[str, Any]]:
-        """
-        Search knowledge base with advanced features
-        
-        Args:
-            query: Search query
-            use_expansion: Whether to use LLM query expansion
-            top_k: Number of results
-        
-        Returns:
-            List of results with content, metadata, and relevance scores
-        """
+        """Search knowledge base with advanced features"""
         if not self.retriever:
             return []
         
         try:
-            # Query expansion for better results
             search_query = self._expand_query(query) if use_expansion else query
             
-            # Retrieve with scores
             docs_with_scores = self.vectorstore.similarity_search_with_relevance_scores(
                 search_query,
                 k=top_k
@@ -310,7 +287,7 @@ def get_rag_system() -> ProfessionalRAG:
 @tool
 def retriever_tool(query: str) -> str:
     """
-    Search Apex Digital Solutions knowledge base.
+    Search Apec Digital Solutions knowledge base.
     
     Use this tool to answer questions about:
     - Company services and capabilities
@@ -320,7 +297,7 @@ def retriever_tool(query: str) -> str:
     - Team and company background
     
     Args:
-        query: Question about Apex Digital Solutions
+        query: Question about Apec Digital Solutions
     
     Returns:
         Professional answer with source citations
@@ -331,48 +308,37 @@ def retriever_tool(query: str) -> str:
         if not rag.retriever:
             return (
                 "I apologize, but the knowledge base is not available right now. "
-                "Please ensure company documents are in the rag_documents folder. "
-                "\n\nGeneral info: Apex Digital Solutions specializes in AI/ML solutions, "
-                "custom software development, and digital transformation services."
+                "Please ensure company documents are in the rag_documents folder."
             )
         
-        # Search with advanced features
-        results = rag.search(query, use_expansion=True, top_k=5)
+        # Use vectorstore directly with relevance scores
+        docs_with_scores = rag.vectorstore.similarity_search_with_relevance_scores(query, k=3)
         
-        if not results:
+        if not docs_with_scores:
             return (
                 f"I couldn't find specific information about '{query}' in our knowledge base. "
-                "Could you rephrase your question or ask about our core services like "
-                "AI/ML solutions, custom software development, or digital transformation?"
+                "Could you rephrase your question or ask about our core services?"
             )
         
-        # Format results with citations
         answer_parts = []
         sources_used = set()
         
-        for i, result in enumerate(results, 1):
-            content = result['content'].strip()
-            source = result['source']
-            score = result['relevance_score']
-            
-            # Only include highly relevant results
-            if score >= MIN_RELEVANCE:
-                answer_parts.append(f"**From {source}** (relevance: {score}):\n{content}\n")
+        # Accept results with score >= 0.4 (OpenAI embeddings typically score 0.4-0.7)
+        for doc, score in docs_with_scores:
+            if score >= 0.4:
+                content = doc.page_content.strip()
+                source = doc.metadata.get("source", "Unknown")
+                
+                answer_parts.append(f"**From {source}:**\n{content}\n")
                 sources_used.add(source)
         
         if not answer_parts:
-            return (
-                "I found some information but it wasn't relevant enough. "
-                "Could you rephrase your question?"
-            )
+            return "I found some information but it wasn't relevant enough. Could you rephrase your question?"
         
-        # Combine results
         answer = "\n---\n\n".join(answer_parts)
-        
-        # Add sources footer
         sources_list = "\n".join([f"• {s}" for s in sorted(sources_used)])
         
-        response = f"{answer}\n\n📚 **Sources used:**\n{sources_list}"
+        response = f"{answer}\n\n📚 **Sources:**\n{sources_list}"
         
         return response
         
@@ -380,7 +346,7 @@ def retriever_tool(query: str) -> str:
         print(f"❌ Retriever tool error: {e}")
         return (
             f"I encountered an error searching for information about '{query}'. "
-            "Please try rephrasing your question or contact our team directly."
+            "Please try rephrasing your question."
         )
 
 
@@ -391,8 +357,7 @@ if __name__ == "__main__":
     
     rag = get_rag_system()
     
-    # Test search
-    test_query = "What services does Apex Digital Solutions offer?"
+    test_query = "What services does Apec Digital Solutions offer?"
     print(f"\n🔍 Test Query: {test_query}")
     print("\n" + "=" * 50)
     

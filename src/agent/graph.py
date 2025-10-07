@@ -200,11 +200,33 @@ if __name__ == "__main__":
     
     try:
         result = graph.invoke(test_input)
-        response = result["messages"][-1].content
-        
-        print("\n🤖 Assistant Response:")
+
+        # Show tool results
+        print("\n" + "=" * 60)
+        print("📋 FULL CONVERSATION FLOW:")
+        print("=" * 60)
+
+        for i, msg in enumerate(result["messages"], 1):
+            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                print(f"\n🔧 Agent called tools:")
+                for tc in msg.tool_calls:
+                    print(f"   - {tc['name']}({tc['args']})")
+            
+            if type(msg).__name__ == 'ToolMessage':
+                print(f"\n📚 Retrieved from knowledge base:")
+                print("-" * 60)
+                # Show first 500 chars of tool result
+                content = msg.content[:500] if len(msg.content) > 500 else msg.content
+                print(content)
+                if len(msg.content) > 500:
+                    print(f"\n... (truncated, {len(msg.content)} total chars)")
+                print("-" * 60)
+
+        # Show final response
+        final_response = result["messages"][-1].content
+        print("\n🤖 Final Assistant Response:")
         print("-" * 60)
-        print(response)
+        print(final_response)
         print("-" * 60)
         
         print("\n✅ Agent test completed successfully!")

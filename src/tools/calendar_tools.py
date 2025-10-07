@@ -1,5 +1,6 @@
 """
-Enhanced calendar tools with automatic lead capture integration and availability checking
+Enhanced calendar tools with automatic lead capture integration
+Google Calendar only - Calendly integration removed
 """
 import re
 from datetime import datetime, timedelta
@@ -8,7 +9,6 @@ from dateutil import tz
 from typing import List, Optional, Dict, Any
 from langchain_core.tools import tool
 import openai
-import requests
 import sys
 import os
 from pathlib import Path
@@ -20,97 +20,26 @@ if str(src_dir) not in sys.path:
     sys.path.insert(0, str(src_dir))
 
 from utils.calendar_creator import GoogleCalendarMeetingCreator
-# Note: auto_capture_meeting_lead imported locally to avoid circular imports
 
 # Initialize Google Calendar Creator
 _calendar_creator = None
 
 #-----------------------------------------------------------------------------
-# CALENDLY INTEGRATION
+# AVAILABILITY CHECKING (Simplified - No Calendly)
 #-----------------------------------------------------------------------------
-API_TOKEN = os.getenv("CALENDLY_ACCESS_TOKEN")
-if not API_TOKEN:
-    raise ValueError("Missing CALENDLY_ACCESS_TOKEN in environment variables.")
-API_BASE = "https://api.calendly.com"
-HEADERS = {
-    "Authorization": f"Bearer {API_TOKEN}",
-    "Content-Type": "application/json"
-}
-
-def get_user_uri() -> str:
-    resp = requests.get(f"{API_BASE}/users/me", headers=HEADERS)
-    resp.raise_for_status()
-    return resp.json()["resource"]["uri"]
-
-USER_URI = get_user_uri()
-
-@tool
-def list_availability_schedules(user_uri: str = None) -> List[Dict[str, Any]]:
-    """Retrieve Calendly availability schedules for a given user URI."""
-    if user_uri is None:
-        user_uri = USER_URI
-    url = f"{API_BASE}/user_availability_schedules"
-    resp = requests.get(url, params={"user": user_uri}, headers=HEADERS)
-    resp.raise_for_status()
-    return resp.json()
-
-@tool
-def list_busy_times(start: datetime, end: datetime, user_uri: str = None) -> Dict[str, Any]:
-    """Retrieve busy time slots between two datetimes for a given user."""
-    if user_uri is None:
-        user_uri = USER_URI
-    url = f"{API_BASE}/user_busy_times"
-    params = {
-        "user": user_uri,
-        "start_time": start.isoformat(),
-        "end_time": end.isoformat()
-    }
-    resp = requests.get(url, params=params, headers=HEADERS)
-    resp.raise_for_status()
-    return resp.json()
 
 def check_availability(start_dt: datetime, end_dt: datetime) -> Dict[str, Any]:
     """
-    Check if a specific time slot is available using Calendly API.
-
+    Simplified availability check without Calendly.
+    Always returns available.
+    
     Returns:
         Dict with 'available' boolean and 'conflicts' list
     """
-    try:
-        # Check the day containing the requested slot
-        day_start = start_dt.replace(hour=0, minute=0, second=0, microsecond=0)
-        day_end = day_start + timedelta(days=1)
-
-        busy_resp = list_busy_times.invoke({"start": day_start, "end": day_end})
-        busy_slots = busy_resp.get("collection", [])
-
-        conflicts = []
-        for slot in busy_slots:
-            slot_start = datetime.fromisoformat(slot["start_time"].replace("Z", "+00:00"))
-            slot_end = datetime.fromisoformat(slot["end_time"].replace("Z", "+00:00"))
-
-            # Convert to same timezone if needed
-            if slot_start.tzinfo != start_dt.tzinfo:
-                slot_start = slot_start.astimezone(start_dt.tzinfo)
-                slot_end = slot_end.astimezone(start_dt.tzinfo)
-
-            # Check for overlap
-            if not (end_dt <= slot_start or start_dt >= slot_end):
-                conflicts.append({
-                    "start": slot_start,
-                    "end": slot_end,
-                    "title": slot.get("event_type", "Busy")
-                })
-
-        return {
-            "available": len(conflicts) == 0,
-            "conflicts": conflicts
-        }
-
-    except Exception as e:
-        print(f"Availability check failed: {e}")
-        # If availability check fails, assume available to not block booking
-        return {"available": True, "conflicts": []}
+    return {
+        "available": True,
+        "conflicts": []
+    }
 
 @tool
 def suggest_alternative_times(
@@ -119,8 +48,8 @@ def suggest_alternative_times(
     num_suggestions: int = 3
 ) -> str:
     """
-    Suggest alternative meeting times if the requested slot is busy.
-
+    Suggest alternative meeting times based on business hours.
+    
     Args:
         start_text: Original requested time
         duration_text: Meeting duration
@@ -128,50 +57,40 @@ def suggest_alternative_times(
     """
     try:
         original_start = parse_datetime.invoke({"text": start_text})
-        duration = parse_duration.invoke({"text": duration_text})
-
+        
         suggestions = []
-        current_time = original_start
-
-        # Look for alternatives within the next 7 days
-        max_attempts = 50  # Limit search to prevent infinite loops
+        current_time = original_start + timedelta(days=1)
+        
+        max_attempts = 50
         attempts = 0
 
         while len(suggestions) < num_suggestions and attempts < max_attempts:
-            current_end = current_time + duration
-            availability = check_availability(current_time, current_end)
-
-            if availability["available"]:
+            if current_time.hour >= 9 and current_time.hour < 18 and current_time.weekday() < 5:
                 suggestions.append({
                     "start": current_time,
-                    "end": current_end,
                     "formatted": current_time.strftime('%A, %B %d at %I:%M %p %Z')
                 })
 
-            # Move to next hour, but skip outside business hours
             current_time += timedelta(hours=1)
 
-            # Skip to next business day if outside hours (9 AM - 6 PM)
             if current_time.hour < 9 or current_time.hour >= 18:
-                # Move to 9 AM next day
                 next_day = current_time.replace(hour=9, minute=0, second=0, microsecond=0)
                 if current_time.hour >= 18:
                     next_day += timedelta(days=1)
-                # Skip weekends
-                while next_day.weekday() >= 5:  # Saturday = 5, Sunday = 6
+                while next_day.weekday() >= 5:
                     next_day += timedelta(days=1)
                 current_time = next_day
 
             attempts += 1
 
         if not suggestions:
-            return "❌ No available alternative times found in the next week. Please contact us directly to discuss scheduling options."
+            return "❌ No available alternative times found. Please contact us directly."
 
-        result = f"📅 Alternative meeting times available:\n\n"
+        result = f"📅 Suggested meeting times:\n\n"
         for i, suggestion in enumerate(suggestions, 1):
             result += f"{i}. {suggestion['formatted']}\n"
 
-        result += f"\nWould you like to book one of these alternative times instead?"
+        result += f"\nWould you like to book one of these times instead?"
         return result
 
     except Exception as e:
@@ -226,12 +145,10 @@ WEEKDAYS = {
 def parse_datetime(text: str, ref: datetime = None) -> datetime:
     """
     Parse any natural-language date/time string into a timezone-aware datetime.
-    Handles "next <weekday>", relative phrases, and complex expressions.
     """
     if ref is None:
         ref = datetime.now(tz=tz.tzlocal())
 
-    # Handle "next <weekday>" via regex
     m = re.match(r"\s*next\s+(\w+)(.*)", text, re.I)
     if m and m.group(1).lower() in WEEKDAYS:
         target = WEEKDAYS[m.group(1).lower()]
@@ -240,7 +157,6 @@ def parse_datetime(text: str, ref: datetime = None) -> datetime:
         date_str = (ref + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
         text = f"{date_str}{m.group(2)}"
 
-    # Try dateparser first
     dt = dp_parse(text, settings={
         "RELATIVE_BASE": ref,
         "PREFER_DATES_FROM": "future",
@@ -249,7 +165,6 @@ def parse_datetime(text: str, ref: datetime = None) -> datetime:
     if dt is not None:
         return dt
 
-    # Fallback to LLM
     return llm_parse_datetime(text, ref)
 
 @tool
@@ -275,7 +190,7 @@ def parse_duration(text: str) -> timedelta:
     raise ValueError(f"Unrecognized duration: {text}")
 
 #-----------------------------------------------------------------------------
-# ENHANCED MEETING SCHEDULING WITH AVAILABILITY CHECKING
+# ENHANCED MEETING SCHEDULING WITH LEAD CAPTURE
 #-----------------------------------------------------------------------------
 
 @tool
@@ -287,69 +202,33 @@ def schedule_by_natural_with_lead_capture(
     organization: str = "",
     project_description: str = "",
     title: str = "",
-    description: str = ""
+    description: str = "",
+    timezone: str = "America/New_York"  # Default to EST/EDT
 ) -> str:
     """
-    🎯 ENHANCED: Schedule meeting with availability checking and automatic lead capture
-
-    This tool first checks if the requested time slot is available before booking.
-    If unavailable, it suggests alternative times.
-
+    Schedule meeting with automatic lead capture
+    
     Args:
-        start_text: Natural language start time (e.g., "Monday at 11 am")
-        duration_text: Natural language duration (e.g., "1 hour")
-        attendee_name: Full name of the attendee
-        attendee_email: Email address of the attendee
-        organization: Company/organization name (optional)
-        project_description: Brief description of their project/needs (optional)
-        title: Meeting title (auto-generated if not provided)
-        description: Meeting description (auto-generated if not provided)
+        start_text: Natural language start time
+        duration_text: Natural language duration
+        attendee_name: Full name
+        attendee_email: Email address
+        organization: Company name
+        project_description: Project needs
+        title: Meeting title (auto-generated if empty)
+        description: Meeting description (auto-generated if empty)
+        timezone: IANA timezone (e.g., 'America/New_York', 'Asia/Karachi')
     """
     try:
-        # Parse time and duration
         start_dt = parse_datetime.invoke({"text": start_text})
         duration = parse_duration.invoke({"text": duration_text})
         end_dt = start_dt + duration
 
-        print(f"🔍 Checking availability for {start_dt.strftime('%A, %B %d at %I:%M %p %Z')}")
+        print(f"🔍 Scheduling meeting for {start_dt.strftime('%A, %B %d at %I:%M %p %Z')}")
 
-        # Check availability first
-        availability = check_availability(start_dt, end_dt)
-
-        if not availability["available"]:
-            # Time slot is busy - suggest alternatives
-            conflicts_info = []
-            for conflict in availability["conflicts"]:
-                conflict_time = f"{conflict['start'].strftime('%I:%M %p')} - {conflict['end'].strftime('%I:%M %p')}"
-                conflicts_info.append(f"• {conflict_time}: {conflict.get('title', 'Busy')}")
-
-            conflicts_text = "\n".join(conflicts_info)
-
-            # Get alternative suggestions
-            alternatives = suggest_alternative_times.invoke({
-                "start_text": start_text,
-                "duration_text": duration_text,
-                "num_suggestions": 3
-            })
-
-            return f"""⚠️ The requested time slot is not available.
-
-📅 Requested: {start_dt.strftime('%A, %B %d at %I:%M %p %Z')}
-❌ Conflicts found:
-{conflicts_text}
-
-{alternatives}
-
-Please let me know which alternative time works for you, and I'll schedule the meeting with automatic lead capture."""
-
-        # Time slot is available - proceed with booking
-        print(f"✅ Time slot available, proceeding with booking...")
-
-        # Auto-generate title if not provided
         if not title:
-            title = f"Narsun Studios Consultation - {attendee_name}"
+            title = f"Apec Digital Solutions Consultation - {attendee_name}"
 
-        # Auto-generate description if not provided
         if not description:
             desc_parts = [f"Meeting with {attendee_name}"]
             if organization:
@@ -358,7 +237,6 @@ Please let me know which alternative time works for you, and I'll schedule the m
                 desc_parts.append(f"regarding: {project_description}")
             description = " ".join(desc_parts)
 
-        # Create the calendar meeting
         calendar = get_calendar_creator()
         event = calendar.create_meeting_with_google_meet(
             title=title,
@@ -370,9 +248,8 @@ Please let me know which alternative time works for you, and I'll schedule the m
         )
 
         if not event:
-            return "❌ Failed to create meeting. Please check your inputs and try again."
+            return "❌ Failed to create meeting. Please check your inputs."
 
-        # Extract meeting details
         event_id = event['id']
         meeting_link = event.get('htmlLink', 'N/A')
         meet_link = "N/A"
@@ -381,9 +258,7 @@ Please let me know which alternative time works for you, and I'll schedule the m
             if entry_points:
                 meet_link = entry_points[0].get('uri', 'N/A')
 
-        # Automatically capture the lead
         try:
-            # Import here to avoid circular imports
             from tools.lead_tools import auto_capture_meeting_lead
             lead_capture_result = auto_capture_meeting_lead.invoke({
                 "name": attendee_name,
@@ -396,7 +271,6 @@ Please let me know which alternative time works for you, and I'll schedule the m
         except Exception as e:
             lead_capture_result = f"⚠️ Lead capture failed: {str(e)}"
 
-        # Format success response
         response_parts = [
             f"✅ Meeting scheduled successfully!",
             f"📅 {title}",
@@ -418,10 +292,10 @@ Please let me know which alternative time works for you, and I'll schedule the m
         return "\n".join(response_parts)
 
     except Exception as e:
-        return f"❌ Error scheduling meeting with availability check: {str(e)}"
+        return f"❌ Error scheduling meeting: {str(e)}"
 
 #-----------------------------------------------------------------------------
-# BASIC CALENDAR OPERATIONS (unchanged)
+# BASIC CALENDAR OPERATIONS
 #-----------------------------------------------------------------------------
 
 @tool
@@ -434,7 +308,7 @@ def create_google_calendar_meeting(
     location: str = "",
     timezone: str = 'America/New_York'
 ) -> str:
-    """Create a basic Google Calendar meeting without availability checking"""
+    """Create a basic Google Calendar meeting"""
     try:
         calendar = get_calendar_creator()
         event = calendar.create_meeting(
@@ -448,9 +322,9 @@ def create_google_calendar_meeting(
         )
 
         if event:
-            return f"✅ Meeting '{title}' created! Event ID: {event['id']}, Link: {event.get('htmlLink', 'N/A')}"
+            return f"✅ Meeting '{title}' created! Event ID: {event['id']}"
         else:
-            return "❌ Failed to create meeting. Please check your inputs."
+            return "❌ Failed to create meeting."
 
     except Exception as e:
         return f"❌ Error creating meeting: {str(e)}"
@@ -464,7 +338,7 @@ def create_google_meet_meeting(
     attendees: Optional[List[str]] = None,
     timezone: str = 'America/New_York'
 ) -> str:
-    """Create a Google Calendar meeting with Google Meet video conferencing"""
+    """Create a Google Calendar meeting with Google Meet"""
     try:
         calendar = get_calendar_creator()
         event = calendar.create_meeting_with_google_meet(
@@ -483,7 +357,7 @@ def create_google_meet_meeting(
                 if entry_points:
                     meet_link = entry_points[0].get('uri', 'N/A')
 
-            return f"✅ Google Meet meeting '{title}' created! Event ID: {event['id']}, Meet Link: {meet_link}"
+            return f"✅ Google Meet meeting '{title}' created! Meet Link: {meet_link}"
         else:
             return "❌ Failed to create Google Meet meeting."
 
@@ -551,7 +425,7 @@ def update_google_calendar_event(
         )
 
         if updated_event:
-            return f"✅ Event {event_id} updated successfully! Link: {updated_event.get('htmlLink', 'N/A')}"
+            return f"✅ Event {event_id} updated successfully!"
         else:
             return f"❌ Failed to update event {event_id}."
 
@@ -584,7 +458,7 @@ def create_recurring_meeting(
         )
 
         if event:
-            return f"✅ Recurring meeting '{title}' created! Event ID: {event['id']}, Recurrence: {recurrence_rule}"
+            return f"✅ Recurring meeting '{title}' created! Recurrence: {recurrence_rule}"
         else:
             return "❌ Failed to create recurring meeting."
 
