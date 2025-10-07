@@ -45,3 +45,8 @@ dist/
 
 # ---- Misc ----
 __MACOSX/
+
+
+.env
+credentials.json
+token.json
