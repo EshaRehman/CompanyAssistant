@@ -1,0 +1,23 @@
+{
+  "dependencies": [
+    "langchain-openai",
+    "langchain-community",
+    "langchain-chroma",
+    "langgraph",
+    "python-dotenv",
+    "requests",
+    "dateparser",
+    "python-dateutil",
+    "google-auth",
+    "google-auth-oauthlib",
+    "google-api-python-client",
+    "gspread",
+    "pypdf",
+    "chromadb",
+    "openai"
+  ],
+  "graphs": {
+    "narsun_agent": "./src/agent/graph.py:graph"
+  },
+  "env": ".env"
+}

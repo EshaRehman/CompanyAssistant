@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "narsun-agent"
+version = "1.0.0"
+description = "Narsun Studios LangGraph Agent with automatic lead capture"
+authors = [{name = "Narsun Studios", email = "info@narsunstudios.com"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["langgraph", "ai", "assistant", "calendar", "leads"]
+
+dependencies = [
+    "langchain-openai>=0.1.0",
+    "langchain-community>=0.1.0",
+    "langchain-chroma>=0.1.0",
+    "langchain-core>=0.1.0",
+    "langgraph>=0.1.0",
+    "python-dotenv>=0.19.0",
+    "requests>=2.28.0",
+    "dateparser>=1.1.4",
+    "python-dateutil>=2.8.2",
+    "google-auth>=2.15.0",
+    "google-auth-oauthlib>=1.0.0",
+    "google-api-python-client>=2.70.0",
+    "gspread>=5.7.0",
+    "pypdf>=3.0.0",
+    "chromadb>=0.4.0",
+    "openai>=1.0.0",
+    "tiktoken>=0.4.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.20.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "flake8>=4.0.0"
+]
+
+[project.urls]
+Homepage = "https://narsunstudios.com"
+Repository = "https://github.com/narsunstudios/narsun-agent"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["narsun_agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

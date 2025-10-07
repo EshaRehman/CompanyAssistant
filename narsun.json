@@ -1,0 +1,88 @@
+{
+  "name": "Narsun Studios",
+  "tagline": "We future-proof industries with award-winning AI & XR immersive experiences.",
+  "overview": "Narsun Studios is a global creative and design production house delivering AI/XR solutions for real estate, sports/events, government (Vision 2030), tourism, education and entertainment. Combining US-grade R&D with execution speed, they build digital twins, gamified experiences, and custom immersive workflows that drive engagement, accelerate sales, and modernize infrastructure.",
+  "founded": 2016,
+  "headquarters": "Wilmington, Delaware, US",
+  "size": "201-500 employees",
+  "industries": [
+    "Events",
+    "Entertainment",
+    "Real Estate",
+    "Healthcare",
+    "Tourism and Hospitality",
+    "Education and Training",
+    "Sports",
+    "Defence",
+    "Blockchain & Web3"
+  ],
+  "services": [
+    "Immersive Transformations",
+    "AI Innovations",
+    "Metaverse & Virtual Ecosystems",
+    "Digital Twins & Spatial Computing",
+    "AR/VR & Mixed Reality Solutions",
+    "Gamification",
+    "Blockchain Development",
+    "Staff Augmentation"
+  ],
+  "products": [
+    "EventCast",
+    "Audience Engagement Suite",
+    "EchoBuild",
+    "VisionAR Studio",
+    "SurgiXR Suite",
+    "Shift Space",
+    "Journey Through Time",
+    "Nex-Dome",
+    "MissionReady"
+  ],
+  "specialties": [
+    "Desktop Applications",
+    "Unreal Engine Development",
+    "Digital Twins",
+    "Augmented Reality",
+    "Virtual Reality",
+    "Metaverse Creation",
+    "Gamification",
+    "Blockchain",
+    "Virtual Experiences",
+    "AI-powered Interactive Experiences",
+    "Custom Workflow Integrations"
+  ],
+  "key_metrics": {
+    "happy_clients": "200+",
+    "gross_revenue": "$100M+",
+    "successful_projects": "300+",
+    "client_satisfaction_rate": "95%"
+  },
+  "differentiators": [
+    "US-grade R&D + one-team end-to-end execution with zero gaps",
+    "100+ deployments from Silicon Valley startups to Saudi ministries",
+    "No pilots—ROI-focused production-ready solutions",
+    "Proven engagement lift (e.g., gamified sports experiences increasing fan engagement by ~40%)",
+    "Vision 2030-ready smart city & digital twin implementations"
+  ],
+  "notable_clients": [
+    "Lexus",
+    "Saudi Tourism Authority",
+    "Mercedes",
+    "PwC",
+    "National Housing Company",
+    "Coca Cola",
+    "Carnival Cruise",
+    "NBA"
+  ],
+  "contact": {
+    "phone_us": "+1 (646) 243 0100",
+    "primary_location": "4515 Roslyn Dr, Wilmington, Delaware 19804, US",
+    "website": "https://www.narsunstudios.com"
+  },
+  "linkedin": {
+    "headline": "Award winning AI + XR for Real Estate, Sports, Expo, Tourism & Government | From Silicon Valley to Saudi Vision 2030",
+    "summary": "Narsun Studios delivers AI/XR solutions to global brands and Middle East government demand. For governments: Vision 2030-ready digital twins & smart city XR. For sports/events: Gamified experiences that boost fan engagement. For real estate: AI staging that closes deals faster. US-grade R&D combined with deployments worldwide—no pilots, just ROI."
+  },
+  "prompting_hints": {
+    "intake_instructions": "Ask the client for their name, email, core problem, industry, and desired outcome before scheduling. Use the knowledge base about Narsun to tailor your explanation. If scheduling is requested, verify availability and confirm time, duration, and participants clearly. Always summarize inferred need at end and store as a lead."
+  }
+}
