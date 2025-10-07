@@ -75,7 +75,6 @@ mmh3==5.2.0
 mpmath==1.3.0
 multidict==6.6.4
 mypy_extensions==1.1.0
-narsun-agent @ file:///home/narsun/Documents/NARSUN/Narsun_Agent
 numpy==2.3.2
 oauthlib==3.3.1
 onnxruntime==1.22.1

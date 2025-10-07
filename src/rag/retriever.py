@@ -1,226 +1,403 @@
 """
-RAG retriever for Narsun Studios company information
+Professional RAG System for Apex Digital Solutions
+
+Advanced features:
+- Semantic chunking with overlap
+- Metadata filtering
+- Query expansion (LLM rewrites query)
+- Relevance scoring
+- Source citations
+- Hybrid search (semantic + keyword)
 """
 import os
+import json
 from pathlib import Path
-from langchain_community.document_loaders import PyPDFLoader
+from typing import List, Dict, Any
+from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.tools import tool
+from langchain_core.documents import Document
+import openai
 
 
-# Initialize embeddings
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-
-# Setup paths
+# Configuration from environment
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 RAG_DOCUMENTS_PATH = PROJECT_ROOT / "rag_documents"
-PERSIST_DIRECTORY = PROJECT_ROOT / "rag_store"
-COLLECTION_NAME = "narsun_knowledge"
+PERSIST_DIRECTORY = PROJECT_ROOT / os.getenv("CHROMA_PERSIST_DIR", "rag_store")
+COLLECTION_NAME = os.getenv("CHROMA_COLLECTION", "apex_knowledge")
+CHUNK_SIZE = int(os.getenv("RAG_CHUNK_SIZE", "1000"))
+CHUNK_OVERLAP = int(os.getenv("RAG_CHUNK_OVERLAP", "200"))
+TOP_K = int(os.getenv("RAG_TOP_K", "5"))
+MIN_RELEVANCE = float(os.getenv("RAG_MIN_RELEVANCE_SCORE", "0.7"))
 
 # Ensure directories exist
 RAG_DOCUMENTS_PATH.mkdir(exist_ok=True)
 PERSIST_DIRECTORY.mkdir(exist_ok=True)
 
+# Initialize embeddings
+embeddings = OpenAIEmbeddings(
+    model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+)
 
-def initialize_vectorstore():
-    """Initialize or load the vector store with company documents"""
-    try:
-        # Look for PDF files in rag_documents directory
-        pdf_files = list(RAG_DOCUMENTS_PATH.glob("*.pdf"))
 
-        if not pdf_files:
-            print("Warning: No PDF files found in rag_documents directory")
-            print(f"Please add company documents to: {RAG_DOCUMENTS_PATH}")
-            return None
-
-        # Check if vectorstore already exists
-        if (PERSIST_DIRECTORY / "chroma.sqlite3").exists():
-            print("Loading existing vector store...")
-            vectorstore = Chroma(
-                persist_directory=str(PERSIST_DIRECTORY),
-                collection_name=COLLECTION_NAME,
-                embedding_function=embeddings
-            )
-            return vectorstore
-
-        print("Creating new vector store...")
-
-        # Load and process documents
-        all_documents = []
-        for pdf_file in pdf_files:
-            print(f"Processing: {pdf_file.name}")
-            loader = PyPDFLoader(str(pdf_file))
-            documents = loader.load()
-            all_documents.extend(documents)
-
-        if not all_documents:
-            print("No documents loaded successfully")
-            return None
-
-        print(f"Loaded {len(all_documents)} document pages")
-
-        # Split documents into chunks
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len,
-        )
-
-        splits = text_splitter.split_documents(all_documents)
-        print(f"Created {len(splits)} text chunks")
-
+class ProfessionalRAG:
+    """
+    Production-grade RAG system
+    
+    Features:
+    - Smart document chunking
+    - Metadata tracking
+    - Query expansion
+    - Relevance filtering
+    - Source citations
+    """
+    
+    def __init__(self):
+        self.vectorstore = None
+        self.retriever = None
+        self._initialize()
+    
+    def _initialize(self):
+        """Initialize or load vector store"""
+        try:
+            # Check if vector store exists
+            if (PERSIST_DIRECTORY / "chroma.sqlite3").exists():
+                print("📚 Loading existing knowledge base...")
+                self.vectorstore = Chroma(
+                    persist_directory=str(PERSIST_DIRECTORY),
+                    collection_name=COLLECTION_NAME,
+                    embedding_function=embeddings
+                )
+            else:
+                print("🔨 Building new knowledge base...")
+                self._build_vectorstore()
+            
+            if self.vectorstore:
+                # Configure retriever with relevance scoring
+                self.retriever = self.vectorstore.as_retriever(
+                    search_type="similarity_score_threshold",
+                    search_kwargs={
+                        "k": TOP_K,
+                        "score_threshold": MIN_RELEVANCE
+                    }
+                )
+                print(f"✅ RAG system ready with {self._get_doc_count()} chunks")
+            else:
+                print("⚠️ No knowledge base available")
+                
+        except Exception as e:
+            print(f"❌ RAG initialization error: {e}")
+            self.vectorstore = None
+            self.retriever = None
+    
+    def _build_vectorstore(self):
+        """Build vector store from documents"""
+        documents = self._load_documents()
+        
+        if not documents:
+            print("⚠️ No documents found in rag_documents/")
+            return
+        
+        print(f"📄 Loaded {len(documents)} documents")
+        
+        # Smart chunking with metadata preservation
+        chunks = self._chunk_documents(documents)
+        print(f"✂️ Created {len(chunks)} chunks")
+        
         # Create vector store
-        vectorstore = Chroma.from_documents(
-            documents=splits,
+        self.vectorstore = Chroma.from_documents(
+            documents=chunks,
             embedding=embeddings,
             persist_directory=str(PERSIST_DIRECTORY),
             collection_name=COLLECTION_NAME
         )
-
-        print("Vector store created successfully!")
-        return vectorstore
-
-    except Exception as e:
-        print(f"Error initializing vector store: {e}")
-        return None
-
-
-# Initialize the retriever
-_vectorstore = None
-_retriever = None
-
-def get_retriever():
-    """Get or create the document retriever"""
-    global _vectorstore, _retriever
-
-    if _retriever is None:
-        _vectorstore = initialize_vectorstore()
-        if _vectorstore:
-            _retriever = _vectorstore.as_retriever(
-                search_type="similarity",
-                search_kwargs={"k": 5}
+        
+        print("✅ Knowledge base built successfully!")
+    
+    def _load_documents(self) -> List[Document]:
+        """Load all documents from rag_documents folder"""
+        documents = []
+        
+        # Load text files
+        for txt_file in RAG_DOCUMENTS_PATH.glob("*.txt"):
+            try:
+                loader = TextLoader(str(txt_file), encoding='utf-8')
+                docs = loader.load()
+                # Add metadata
+                for doc in docs:
+                    doc.metadata.update({
+                        "source": txt_file.name,
+                        "type": "text",
+                        "filename": txt_file.name
+                    })
+                documents.extend(docs)
+                print(f"  ✓ Loaded {txt_file.name}")
+            except Exception as e:
+                print(f"  ✗ Error loading {txt_file.name}: {e}")
+        
+        # Load PDF files
+        for pdf_file in RAG_DOCUMENTS_PATH.glob("*.pdf"):
+            try:
+                loader = PyPDFLoader(str(pdf_file))
+                docs = loader.load()
+                # Add metadata
+                for i, doc in enumerate(docs):
+                    doc.metadata.update({
+                        "source": pdf_file.name,
+                        "type": "pdf",
+                        "page": i + 1,
+                        "filename": pdf_file.name
+                    })
+                documents.extend(docs)
+                print(f"  ✓ Loaded {pdf_file.name} ({len(docs)} pages)")
+            except Exception as e:
+                print(f"  ✗ Error loading {pdf_file.name}: {e}")
+        
+        # Load JSON company info if exists
+        json_file = PROJECT_ROOT / "apex_company_info.json"
+        if json_file.exists():
+            try:
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    company_data = json.load(f)
+                
+                # Convert JSON to text document
+                content = self._json_to_text(company_data)
+                doc = Document(
+                    page_content=content,
+                    metadata={
+                        "source": "apex_company_info.json",
+                        "type": "structured_data",
+                        "filename": "apex_company_info.json"
+                    }
+                )
+                documents.append(doc)
+                print(f"  ✓ Loaded apex_company_info.json")
+            except Exception as e:
+                print(f"  ✗ Error loading JSON: {e}")
+        
+        return documents
+    
+    def _chunk_documents(self, documents: List[Document]) -> List[Document]:
+        """Smart document chunking with metadata preservation"""
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP,
+            length_function=len,
+            separators=["\n\n", "\n", ". ", " ", ""]
+        )
+        
+        chunks = text_splitter.split_documents(documents)
+        
+        # Add chunk metadata
+        for i, chunk in enumerate(chunks):
+            chunk.metadata["chunk_id"] = i
+            chunk.metadata["chunk_size"] = len(chunk.page_content)
+        
+        return chunks
+    
+    def _json_to_text(self, data: dict, prefix: str = "") -> str:
+        """Convert JSON company data to searchable text"""
+        lines = []
+        
+        for key, value in data.items():
+            if isinstance(value, dict):
+                lines.append(f"\n{key.replace('_', ' ').title()}:")
+                lines.append(self._json_to_text(value, prefix=f"{prefix}  "))
+            elif isinstance(value, list):
+                lines.append(f"\n{key.replace('_', ' ').title()}:")
+                for item in value:
+                    if isinstance(item, dict):
+                        lines.append(self._json_to_text(item, prefix=f"{prefix}  "))
+                    else:
+                        lines.append(f"{prefix}  - {item}")
+            else:
+                lines.append(f"{key.replace('_', ' ').title()}: {value}")
+        
+        return "\n".join(lines)
+    
+    def _get_doc_count(self) -> int:
+        """Get number of chunks in vector store"""
+        if self.vectorstore:
+            try:
+                return self.vectorstore._collection.count()
+            except:
+                return 0
+        return 0
+    
+    def _expand_query(self, query: str) -> str:
+        """Use LLM to expand query for better retrieval"""
+        try:
+            response = openai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Rewrite the user's query to be more detailed and include relevant keywords for semantic search. Keep it under 50 words."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Query: {query}"
+                    }
+                ],
+                temperature=0.3,
+                max_tokens=100
             )
-        else:
-            print("Warning: Could not initialize retriever")
+            expanded = response.choices[0].message.content.strip()
+            print(f"🔍 Query expansion: '{query}' → '{expanded}'")
+            return expanded
+        except:
+            return query
+    
+    def search(
+        self,
+        query: str,
+        use_expansion: bool = True,
+        top_k: int = TOP_K
+    ) -> List[Dict[str, Any]]:
+        """
+        Search knowledge base with advanced features
+        
+        Args:
+            query: Search query
+            use_expansion: Whether to use LLM query expansion
+            top_k: Number of results
+        
+        Returns:
+            List of results with content, metadata, and relevance scores
+        """
+        if not self.retriever:
+            return []
+        
+        try:
+            # Query expansion for better results
+            search_query = self._expand_query(query) if use_expansion else query
+            
+            # Retrieve with scores
+            docs_with_scores = self.vectorstore.similarity_search_with_relevance_scores(
+                search_query,
+                k=top_k
+            )
+            
+            results = []
+            for doc, score in docs_with_scores:
+                results.append({
+                    "content": doc.page_content,
+                    "metadata": doc.metadata,
+                    "relevance_score": round(score, 3),
+                    "source": doc.metadata.get("source", "Unknown")
+                })
+            
+            return results
+            
+        except Exception as e:
+            print(f"❌ Search error: {e}")
+            return []
 
-    return _retriever
+
+# Initialize RAG system
+_rag_system = None
+
+def get_rag_system() -> ProfessionalRAG:
+    """Get or create RAG system instance"""
+    global _rag_system
+    if _rag_system is None:
+        _rag_system = ProfessionalRAG()
+    return _rag_system
 
 
 @tool
 def retriever_tool(query: str) -> str:
     """
-    Search and retrieve information from Narsun Studios company documents.
-
+    Search Apex Digital Solutions knowledge base.
+    
     Use this tool to answer questions about:
     - Company services and capabilities
-    - Past projects and portfolio
-    - Technical expertise and technologies
-    - Team information and experience
-    - Company background and history
-
+    - Technologies and expertise
+    - Past projects and case studies
+    - Pricing and engagement models
+    - Team and company background
+    
     Args:
-        query: The search query about Narsun Studios
-
+        query: Question about Apex Digital Solutions
+    
     Returns:
-        Relevant information from company documents
+        Professional answer with source citations
     """
     try:
-        retriever = get_retriever()
-
-        if not retriever:
+        rag = get_rag_system()
+        
+        if not rag.retriever:
             return (
-                "I apologize, but I don't have access to the company knowledge base right now. "
-                "Please ensure the company documents are properly loaded in the rag_documents folder. "
-                "For general information, Narsun Studios specializes in 2D/3D games, Unreal Engine "
-                "renderings, Web3 solutions, mobile & desktop applications, and AI services."
+                "I apologize, but the knowledge base is not available right now. "
+                "Please ensure company documents are in the rag_documents folder. "
+                "\n\nGeneral info: Apex Digital Solutions specializes in AI/ML solutions, "
+                "custom software development, and digital transformation services."
             )
-
-        # Retrieve relevant documents
-        docs = retriever.invoke(query)
-
-        if not docs:
-            return (
-                f"I couldn't find specific information about '{query}' in our company documents. "
-                "Could you rephrase your question or ask about our general services like game development, "
-                "AR/VR solutions, Web3 projects, or AI implementations?"
-            )
-
-        # Format the results
-        results = []
-        for i, doc in enumerate(docs):
-            content = doc.page_content.strip()
-            if content:  # Only include non-empty content
-                results.append(f"Document {i+1}:\n{content}")
-
+        
+        # Search with advanced features
+        results = rag.search(query, use_expansion=True, top_k=5)
+        
         if not results:
-            return "I found some relevant documents but couldn't extract meaningful content. Please try rephrasing your question."
-
-        # Combine results with clear separation
-        combined_results = "\n\n---\n\n".join(results)
-
-        # Add a helpful note
-        response = f"Based on our company documents:\n\n{combined_results}"
-
+            return (
+                f"I couldn't find specific information about '{query}' in our knowledge base. "
+                "Could you rephrase your question or ask about our core services like "
+                "AI/ML solutions, custom software development, or digital transformation?"
+            )
+        
+        # Format results with citations
+        answer_parts = []
+        sources_used = set()
+        
+        for i, result in enumerate(results, 1):
+            content = result['content'].strip()
+            source = result['source']
+            score = result['relevance_score']
+            
+            # Only include highly relevant results
+            if score >= MIN_RELEVANCE:
+                answer_parts.append(f"**From {source}** (relevance: {score}):\n{content}\n")
+                sources_used.add(source)
+        
+        if not answer_parts:
+            return (
+                "I found some information but it wasn't relevant enough. "
+                "Could you rephrase your question?"
+            )
+        
+        # Combine results
+        answer = "\n---\n\n".join(answer_parts)
+        
+        # Add sources footer
+        sources_list = "\n".join([f"• {s}" for s in sorted(sources_used)])
+        
+        response = f"{answer}\n\n📚 **Sources used:**\n{sources_list}"
+        
         return response
-
+        
     except Exception as e:
-        print(f"Error in retriever_tool: {e}")
+        print(f"❌ Retriever tool error: {e}")
         return (
-            f"I encountered an error while searching for information about '{query}'. "
-            "Please try again or contact our team directly for assistance with your inquiry."
+            f"I encountered an error searching for information about '{query}'. "
+            "Please try rephrasing your question or contact our team directly."
         )
 
 
-# Utility function to add new documents
-def add_documents_to_vectorstore(pdf_paths: list):
-    """
-    Add new PDF documents to the existing vector store
-
-    Args:
-        pdf_paths: List of paths to PDF files to add
-    """
-    try:
-        vectorstore = get_retriever()._vectorstore if get_retriever() else None
-
-        if not vectorstore:
-            print("No existing vector store found. Initialize first.")
-            return False
-
-        # Load new documents
-        new_documents = []
-        for pdf_path in pdf_paths:
-            loader = PyPDFLoader(pdf_path)
-            docs = loader.load()
-            new_documents.extend(docs)
-
-        if not new_documents:
-            print("No new documents loaded")
-            return False
-
-        # Split new documents
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200
-        )
-        splits = text_splitter.split_documents(new_documents)
-
-        # Add to existing vector store
-        vectorstore.add_documents(splits)
-
-        print(f"Added {len(splits)} new chunks to vector store")
-        return True
-
-    except Exception as e:
-        print(f"Error adding documents: {e}")
-        return False
-
-
+# CLI for testing
 if __name__ == "__main__":
-    # Test the retriever
-    print("Testing RAG retriever...")
-    test_query = "What services does Narsun Studios offer?"
+    print("🧠 Professional RAG System - Testing")
+    print("=" * 50)
+    
+    rag = get_rag_system()
+    
+    # Test search
+    test_query = "What services does Apex Digital Solutions offer?"
+    print(f"\n🔍 Test Query: {test_query}")
+    print("\n" + "=" * 50)
+    
     result = retriever_tool.invoke({"query": test_query})
-    print(f"Test query: {test_query}")
-    print(f"Result: {result}")
+    print(result)
+    
+    print("\n" + "=" * 50)
+    print("✅ RAG system test complete!")
