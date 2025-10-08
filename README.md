@@ -4,7 +4,6 @@
 
 [![LangGraph](https://img.shields.io/badge/LangGraph-Latest-blue)](https://github.com/langchain-ai/langgraph)
 [![Python](https://img.shields.io/badge/Python-3.9+-green)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ## 🎯 Overview
 
@@ -346,17 +345,6 @@ RUN pip install -r requirements.txt
 COPY . .
 CMD ["langgraph", "dev"]
 ```
-
-## 📝 License
-
-MIT License - See LICENSE file for details
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
 
 ## 📧 Support
 
