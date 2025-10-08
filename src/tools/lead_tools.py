@@ -1,5 +1,5 @@
 """
-Lead Management Tools with Professional SQLite CRM
+Lead Management Tools with Professional Supabase CRM
 """
 import re
 import json
@@ -15,7 +15,8 @@ src_dir = current_dir.parent
 if str(src_dir) not in sys.path:
     sys.path.insert(0, str(src_dir))
 
-from database.crm import get_crm
+# Import Supabase CRM (professional!)
+from integrations.supabase_crm import get_crm
 
 
 def assess_lead_quality(
@@ -117,13 +118,12 @@ def auto_capture_meeting_lead(
     organization: str = "",
     project_description: str = "",
     meeting_time: str = "",
-    meeting_id: str = ""
+    meeting_id: str = "",
+    meeting_link: str = ""
 ) -> str:
     """
     Automatically capture lead when meeting is scheduled.
-    Called internally by meeting scheduling tools.
-    
-    Stores lead in professional SQLite database.
+    Stores lead in professional Supabase (PostgreSQL) database.
     
     Args:
         name: Lead's full name
@@ -132,9 +132,10 @@ def auto_capture_meeting_lead(
         project_description: What they need help with
         meeting_time: Scheduled meeting time
         meeting_id: Google Calendar event ID
+        meeting_link: Google Meet link
     
     Returns:
-        Success message with lead score and ID
+        Success message with lead info and Supabase dashboard link
     """
     try:
         # Build meeting context for better assessment
@@ -149,10 +150,10 @@ def auto_capture_meeting_lead(
             meeting_context=meeting_context
         )
         
-        # Store in SQLite database
+        # Store in Supabase (professional PostgreSQL database!)
         crm = get_crm()
         
-        lead_id = crm.create_lead(
+        lead = crm.create_lead(
             name=name,
             email=email,
             company=organization,
@@ -161,11 +162,13 @@ def auto_capture_meeting_lead(
             qualification_notes=assessment["qualification_notes"],
             meeting_id=meeting_id,
             meeting_time=meeting_time,
+            meeting_link=meeting_link,
             source="Meeting Scheduled"
         )
         
         # Format professional response
         score = assessment["lead_score"]
+        lead_id = lead.get("id")
         
         # Determine status emoji
         if score >= 8.0:
@@ -178,15 +181,16 @@ def auto_capture_meeting_lead(
             emoji = "📋"
             status = "Nurture Lead"
         else:
-            emoji = "📝"
+            emoji = "🧊"
             status = "Cold Lead"
         
         return (
-            f"{emoji} **{status} Captured!**\n\n"
+            f"{emoji} **{status} Captured in Supabase!**\n\n"
             f"📊 Score: {score}/10\n"
             f"🆔 Lead ID: {lead_id}\n"
             f"📝 {assessment['summary']}\n\n"
-            f"✅ Stored in CRM database"
+            f"✅ Stored in professional PostgreSQL database\n"
+            f"🌐 View in Supabase Dashboard"
         )
         
     except Exception as e:
@@ -211,7 +215,7 @@ def store_lead_to_sheet(
 ) -> str:
     """
     Legacy function maintained for compatibility.
-    Now uses SQLite database instead of Google Sheets.
+    Now uses Supabase instead of Google Sheets.
     
     Args:
         name: Contact name
@@ -232,10 +236,10 @@ def store_lead_to_sheet(
             interest=raw_context or summary
         )
         
-        # Store in database
+        # Store in Supabase
         crm = get_crm()
         
-        lead_id = crm.create_lead(
+        lead = crm.create_lead(
             name=name,
             email=contact,
             company=role,
@@ -246,8 +250,8 @@ def store_lead_to_sheet(
         )
         
         return (
-            f"✅ Lead stored successfully!\n"
-            f"ID: {lead_id} | Score: {assessment['lead_score']}/10\n"
+            f"✅ Lead stored in Supabase!\n"
+            f"ID: {lead['id']} | Score: {assessment['lead_score']}/10\n"
             f"{assessment['summary']}"
         )
         
@@ -277,7 +281,7 @@ def capture_lead_from_conversation(messages) -> str:
 
 # CLI for testing
 if __name__ == "__main__":
-    print("🧪 Testing Lead Tools with SQLite CRM")
+    print("🧪 Testing Lead Tools with Supabase CRM")
     print("=" * 50)
     
     # Test lead capture
@@ -286,8 +290,9 @@ if __name__ == "__main__":
         "email": "sarah@techstartup.com",
         "organization": "Tech Startup Inc",
         "project_description": "Need AI automation for customer support, looking to reduce response time by 50%",
-        "meeting_time": "2025-01-15 14:00 EST",
-        "meeting_id": "test_evt_123"
+        "meeting_time": "2025-10-15 14:00 EST",
+        "meeting_id": "test_evt_123",
+        "meeting_link": "https://meet.google.com/xxx-yyyy-zzz"
     }
     
     result = auto_capture_meeting_lead.invoke(test_lead)
@@ -297,13 +302,15 @@ if __name__ == "__main__":
     print("\n" + "=" * 50)
     
     # Show database contents
-    from database.crm import get_crm
+    from integrations.supabase_crm import get_crm
     crm = get_crm()
     stats = crm.get_stats()
     
-    print("\n📊 CRM Statistics:")
+    print("\n📊 Supabase CRM Statistics:")
     print(f"Total Leads: {stats['total_leads']}")
     print(f"Average Score: {stats['average_score']}")
     print(f"By Status: {stats['by_status']}")
     
     print("\n✅ All tests passed!")
+    print("\n🌐 View leads in Supabase Dashboard:")
+    print("   https://supabase.com/dashboard/project/YOUR_PROJECT/editor")

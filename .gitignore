@@ -50,3 +50,4 @@ __MACOSX/
 .env
 credentials.json
 token.json
+auth_calendar.py

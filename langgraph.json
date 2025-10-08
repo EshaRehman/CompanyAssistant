@@ -17,7 +17,7 @@
     "openai"
   ],
   "graphs": {
-    "narsun_agent": "./src/agent/graph.py:graph"
+    "Assisstant": "./src/agent/graph.py:graph"
   },
   "env": ".env"
 }
