@@ -1,325 +1,378 @@
-# Narsun Studios LangGraph Agent
+# AI-Powered Company Assistant
 
-An intelligent AI assistant for Narsun Studios with automatic lead capture, Google Calendar integration, and company knowledge retrieval.
+> Professional LangGraph agent with intelligent lead capture, meeting scheduling, and company knowledge base
 
-## 🚀 Features
+[![LangGraph](https://img.shields.io/badge/LangGraph-Latest-blue)](https://github.com/langchain-ai/langgraph)
+[![Python](https://img.shields.io/badge/Python-3.9+-green)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-- **Smart Meeting Scheduling** - Natural language meeting creation with Google Calendar & Google Meet
-- **Automatic Lead Capture** - Intelligent lead qualification and storage during meetings
-- **Company Knowledge Base** - RAG-powered answers about Narsun Studios services
-- **Lead Management** - Google Sheets integration for lead tracking and scoring
-- **LangGraph Studio Ready** - Optimized for LangGraph Cloud deployment
+## 🎯 Overview
 
-## 📁 Project Structure
+An enterprise-grade AI assistant that combines RAG (Retrieval Augmented Generation), CRM, and calendar integration to provide intelligent customer interactions, automatic lead qualification, and seamless meeting scheduling.
 
-```
-narsun-agent/
-├── langgraph.json              # LangGraph Studio configuration
-├── src/
-│   ├── agent/
-│   │   └── graph.py            # Main agent graph
-│   ├── tools/
-│   │   ├── calendar_tools.py   # Enhanced calendar tools
-│   │   └── lead_tools.py       # Lead management tools
-│   ├── rag/
-│   │   └── retriever.py        # Company knowledge retrieval
-│   └── utils/
-│       └── calendar_creator.py # Google Calendar integration
-├── rag_documents/              # Company PDF documents
-├── credentials.json            # Google OAuth credentials
-├── narsungpt-service-account.json # Google Sheets service account
-└── .env                        # Environment variables
-```
+**Perfect for:** Digital agencies, consulting firms, SaaS companies, and service providers looking to automate lead capture and client interactions.
 
-## 🛠️ Setup Instructions
+## ✨ Key Features
 
-### 1. Project Setup
+### 🤖 Intelligent Company Knowledge
+- **Advanced RAG System**: Semantic search with ChromaDB vector database
+- **Query Expansion**: AI-powered query rewriting for better results
+- **Multi-format Support**: PDF, TXT, and JSON document processing
+- **Source Citations**: Always provides referenced answers
 
-```bash
-# Clone or create the project directory
-mkdir narsun-agent
-cd narsun-agent
+### 📅 Smart Meeting Scheduling
+- **Google Calendar Integration**: Direct calendar event creation
+- **Google Meet Links**: Automatic video conference generation
+- **Natural Language**: "Schedule meeting tomorrow at 2pm" → ✅ Booked
+- **Time Zone Support**: Intelligent time zone handling
 
-# Create the directory structure
-mkdir -p src/{agent,tools,rag,utils} rag_documents
-```
+### 🎯 Automatic Lead Capture
+- **Supabase CRM**: Professional PostgreSQL database
+- **AI Lead Scoring**: GPT-4 powered qualification (0-10 scale)
+- **Real-time Dashboard**: Beautiful Supabase admin interface
+- **Lead Status Tracking**: Hot 🔥, Qualified ⭐, Nurture 📋, Cold 🧊
 
-### 2. Google Calendar Setup
+### 🔧 Production-Ready Architecture
+- **LangGraph Framework**: State-based agent orchestration
+- **Proper Error Handling**: Comprehensive exception management
+- **Environment Configuration**: Secure .env setup
+- **Modular Design**: Clean separation of concerns
 
-1. **Enable Google Calendar API:**
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create/select a project
-   - Enable the Google Calendar API
-   - Create OAuth 2.0 credentials (Desktop application)
-   - Download as `credentials.json`
+## 🚀 Quick Start
 
-2. **Place credentials:**
-   ```bash
-   # Place your downloaded credentials.json in the project root
-   cp ~/Downloads/credentials.json ./credentials.json
-   ```
-
-### 3. Google Sheets Setup (Lead Storage)
-
-1. **Create Service Account:**
-   - In Google Cloud Console, go to IAM & Admin > Service Accounts
-   - Create a new service account
-   - Generate and download JSON key
-   - Rename to `narsungpt-service-account.json`
-
-2. **Create Google Sheet:**
-   - Create a new Google Sheet for lead storage
-   - Share it with your service account email (found in the JSON)
-   - Copy the sheet ID from the URL
-
-### 4. Environment Configuration
+### Prerequisites
 
 ```bash
-# Copy the example environment file
+# Requirements
+- Python 3.9+
+- OpenAI API key
+- Google Cloud project (for Calendar API)
+- Supabase account (free tier available)
+```
+
+### Installation
+
+1. **Clone Repository**
+```bash
+git clone <your-repo-url>
+cd company-agent
+```
+
+2. **Install Dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+3. **Configure Environment**
+```bash
 cp .env.example .env
-
-# Edit .env with your actual values
-nano .env
+# Edit .env with your credentials:
+# - OPENAI_API_KEY
+# - SUPABASE_URL
+# - SUPABASE_KEY
+# - COMPANY_NAME
 ```
 
-Required environment variables:
+4. **Setup Google Calendar**
 ```bash
-OPENAI_API_KEY=sk-...
-GOOGLE_SHEETS_SERVICE_ACCOUNT_FILE=./narsungpt-service-account.json
-LEADS_SHEET_ID=your_google_sheet_id_from_url
-LEADS_WORKSHEET_NAME=Lead_Info
+# Place your OAuth credentials
+cp ~/Downloads/credentials.json ./credentials.json
+
+# Authenticate (opens browser)
+python auth_calendar.py
 ```
 
-### 5. Company Documents
-
+5. **Add Company Documents**
 ```bash
-# Add your company PDF documents to rag_documents/
-cp "path/to/Narsun Studios Profile.pdf" ./rag_documents/
+# Add your PDFs, TXTs to rag_documents/
+cp "Company Profile.pdf" rag_documents/
+cp company_info.json rag_documents/
 ```
 
-## 🧪 Local Testing
+6. **Initialize Database**
+```bash
+# Create Supabase table (run this SQL in Supabase dashboard)
+CREATE TABLE leads (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  company TEXT,
+  interest TEXT,
+  lead_score FLOAT DEFAULT 0,
+  status TEXT DEFAULT 'Cold',
+  qualification_notes TEXT,
+  meeting_id TEXT,
+  meeting_time TEXT,
+  meeting_link TEXT,
+  source TEXT DEFAULT 'Unknown',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-### Test Calendar Integration
-
-```python
-# test_calendar.py
-from src.utils.calendar_creator import GoogleCalendarMeetingCreator
-from datetime import datetime, timedelta
-
-def test_calendar():
-    calendar = GoogleCalendarMeetingCreator()
-    
-    # Test basic meeting creation
-    start_time = datetime.now() + timedelta(hours=1)
-    end_time = start_time + timedelta(hours=1)
-    
-    event = calendar.create_meeting_with_google_meet(
-        title="Test Meeting",
-        description="Testing calendar integration",
-        start_time=start_time,
-        end_time=end_time,
-        attendees=["test@example.com"]
-    )
-    
-    if event:
-        print("✅ Calendar integration working!")
-        print(f"Event ID: {event['id']}")
-        return event['id']
-    else:
-        print("❌ Calendar test failed")
-        return None
-
-if __name__ == "__main__":
-    test_calendar()
+CREATE INDEX idx_email ON leads(email);
+CREATE INDEX idx_status ON leads(status);
+CREATE INDEX idx_lead_score ON leads(lead_score DESC);
 ```
 
-### Test Lead Capture
+## 📖 Usage
 
-```python
-# test_leads.py
-from src.tools.lead_tools import auto_capture_meeting_lead
+### Running the Agent
 
-def test_lead_capture():
-    result = auto_capture_meeting_lead.invoke({
-        "name": "John Doe",
-        "email": "john@example.com", 
-        "organization": "Tech Corp",
-        "project_description": "Need AR app for retail stores",
-        "meeting_time": "2024-08-16 14:00 EST",
-        "meeting_id": "test-meeting-123"
-    })
-    
-    print("Lead capture result:", result)
-
-if __name__ == "__main__":
-    test_lead_capture()
+**Option 1: LangGraph Studio (Recommended)**
+```bash
+langgraph dev
+# Open http://localhost:8000
 ```
 
-### Test RAG System
-
+**Option 2: Python Script**
 ```python
-# test_rag.py
-from src.rag.retriever import retriever_tool
-
-def test_rag():
-    result = retriever_tool.invoke({
-        "query": "What services does Narsun Studios offer?"
-    })
-    
-    print("RAG result:", result)
-
-if __name__ == "__main__":
-    test_rag()
-```
-
-### Test Complete Agent
-
-```python
-# test_agent.py
 from src.agent.graph import graph
 
-def test_agent():
-    # Test meeting scheduling with lead capture
-    test_input = {
-        "messages": [{
-            "role": "user",
-            "content": "I'd like to schedule a meeting. My name is Sarah Chen, email sarah@techcorp.com, from TechCorp. We need help with an AR shopping app for our retail chain. Can we meet tomorrow at 2pm for 1 hour?"
-        }]
-    }
-    
-    result = graph.invoke(test_input)
-    print("Agent response:", result["messages"][-1]["content"])
+result = graph.invoke({
+    "messages": [{"role": "user", "content": "Tell me about your services"}],
+    "lead_context": {},
+    "meeting_context": {}
+})
 
-if __name__ == "__main__":
-    test_agent()
+print(result["messages"][-1].content)
 ```
 
-## 🚀 LangGraph Studio Deployment
+**Option 3: LangGraph Cloud**
+```bash
+langgraph deploy
+```
 
-### 1. Prepare for Studio
+### Example Conversations
+
+**Company Information Query:**
+```
+User: What services do you offer?
+
+AI: We specialize in three core areas:
+• AI/ML Solutions – Custom chatbots, LLM integrations, automation
+• Enterprise Software – Full-stack web/mobile apps, cloud-native architecture  
+• Digital Transformation – Process automation, legacy modernization, consulting
+
+Would you like to schedule a consultation?
+```
+
+**Meeting Scheduling:**
+```
+User: I need help with AI automation. Can we schedule a call?
+
+AI: I'd be happy to schedule a consultation. Please provide:
+• Your full name
+• Email address
+• Company name
+• Preferred meeting time
+
+User: John Smith, john@techcorp.com, TechCorp, need customer service automation, tomorrow at 2pm
+
+AI: ✅ Meeting scheduled for October 9, 2025 at 2:00 PM EST with john@techcorp.com
+```
+
+## 🏗️ Architecture
+
+```
+company-agent/
+├── src/
+│   ├── agent/
+│   │   └── graph.py              # Main LangGraph agent
+│   ├── tools/
+│   │   ├── calendar_tools.py     # Google Calendar integration
+│   │   └── lead_tools.py         # CRM and lead management
+│   ├── rag/
+│   │   └── retriever.py          # RAG system with ChromaDB
+│   ├── integrations/
+│   │   └── supabase_crm.py       # Supabase database client
+│   └── utils/
+│       └── calendar_creator.py   # Google Calendar helper
+├── rag_documents/                # Company knowledge base
+├── prompts/
+│   └── system_prompt.json        # Agent instructions
+├── langgraph.json                # LangGraph configuration
+├── requirements.txt              # Python dependencies
+└── .env                          # Environment variables
+```
+
+## 🔧 Configuration
+
+### Environment Variables
 
 ```bash
-# Ensure all dependencies are listed correctly
-cat langgraph.json
+# Required
+OPENAI_API_KEY=sk-...
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_KEY=eyJ...
+COMPANY_NAME=Your Company Name
 
-# Test locally first
-langgraph dev
+# Optional
+EMBEDDING_MODEL=text-embedding-3-small
+RAG_CHUNK_SIZE=1000
+RAG_CHUNK_OVERLAP=200
+RAG_TOP_K=3
 ```
 
-### 2. Upload to LangGraph Cloud
+### Customization
 
-1. Open LangGraph Studio
-2. Create new project
-3. Upload project files:
-   - All `src/` directory contents
-   - `langgraph.json`
-   - `credentials.json`
-   - `narsungpt-service-account.json`
-   - Company documents in `rag_documents/`
+**Update Company Information:**
+1. Edit `rag_documents/apec_company_info.json`
+2. Add PDFs to `rag_documents/`
+3. Restart agent to rebuild knowledge base
 
-### 3. Configure Environment
+**Modify Agent Behavior:**
+- Edit `prompts/system_prompt.json` for response style
+- Adjust `src/agent/graph.py` for workflow logic
+- Customize tools in `src/tools/`
 
-In LangGraph Studio, set environment variables:
-- `OPENAI_API_KEY`
-- `GOOGLE_SHEETS_SERVICE_ACCOUNT_FILE`
-- `LEADS_SHEET_ID` 
-- `LEADS_WORKSHEET_NAME`
+## 📊 Features in Detail
 
-### 4. Deploy and Test
+### Lead Scoring Algorithm
 
-1. Deploy the agent
-2. Test with sample conversations
-3. Verify lead capture is working
-4. Check calendar integration
+The AI automatically scores leads 0-10 based on:
+- **9-10 (🔥 Hot)**: Decision maker, clear budget/timeline, specific needs
+- **7-8 (⭐ Qualified)**: Strong interest, defined requirements
+- **5-6 (📋 Nurture)**: Qualified prospect, general interest
+- **3-4 (🧊 Cold)**: Early inquiry, vague needs
 
-## 🎯 Key Improvements Over Original
+### Meeting Scheduling Flow
 
-### Automatic Lead Capture
-- **Before:** Manual lead capture via separate tool calls
-- **After:** Automatic capture during meeting scheduling
-- **Benefit:** Higher conversion rates, no missed leads
+1. User expresses interest in meeting
+2. Agent collects: name, email, company, needs, time preference
+3. Validates availability (business hours check)
+4. Creates Google Calendar event + Meet link
+5. **Automatically captures lead** with AI scoring
+6. Stores in Supabase with meeting details
 
-### Enhanced Meeting Flow
-- **Before:** Basic scheduling without context
-- **After:** Rich meeting creation with attendee details, project context, and automatic lead scoring
-- **Benefit:** Better preparation and follow-up
+### RAG System
 
-### Production Ready Structure  
-- **Before:** Flat file structure, hardcoded paths
-- **After:** Proper package structure, environment configuration, error handling
-- **Benefit:** Scalable, maintainable, deployable
+- **Semantic Search**: Finds relevant content using vector embeddings
+- **Query Expansion**: AI rewrites queries for better matching
+- **Relevance Filtering**: Only returns high-confidence results (>0.4 score)
+- **Source Attribution**: Always cites document sources
 
-### Smart Lead Scoring
-- **Before:** Manual scoring
-- **After:** LLM-powered assessment with business context
-- **Benefit:** Better lead prioritization
+## 🧪 Testing
 
-## 🔧 Usage Examples
+```bash
+# Test RAG system
+python src/rag/retriever.py
 
-### Schedule Meeting with Auto Lead Capture
-```
-User: "Hi, I'm Alex from StartupCo. We need help building a VR training app. Can we meet Friday at 3pm?"
+# Test lead capture
+python src/tools/lead_tools.py
 
-Agent: Uses schedule_by_natural_with_lead_capture automatically
-- Creates calendar meeting
-- Captures lead (Alex, StartupCo, VR training needs) 
-- Scores lead based on business context
-- Provides meeting confirmation
+# Test calendar integration
+python src/utils/calendar_creator.py
+
+# Test full agent
+python src/agent/graph.py
 ```
 
-### Company Information Query
-```
-User: "What's Narsun's experience with AR projects?"
-
-Agent: Uses retriever_tool
-- Searches company documents
-- Returns relevant project examples
-- Provides specific capabilities
-```
-
-## 🚨 Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **Calendar authentication fails:**
-   ```bash
-   # Delete existing token and re-authenticate
-   rm token.json
-   python test_calendar.py
-   ```
-
-2. **RAG returns no results:**
-   ```bash
-   # Check if documents are in rag_documents/
-   ls rag_documents/
-   # Ensure PDF files are readable
-   ```
-
-3. **Lead capture fails:**
-   ```bash
-   # Verify Google Sheets access
-   # Check service account permissions
-   # Ensure sheet ID is correct
-   ```
-
-### Debug Mode
-
-Set environment variable for detailed logging:
+**"RAG returns no results"**
 ```bash
-export LANGSMITH_TRACING=true
-export LANGSMITH_PROJECT=narsun_agent_debug
+# Rebuild vector database
+rm -rf rag_store/
+python src/rag/retriever.py
 ```
 
-## 📊 Monitoring & Analytics
+**"Google Calendar authentication failed"**
+```bash
+# Re-authenticate
+rm token.json
+python auth_calendar.py
+```
 
-The agent automatically tracks:
-- Meeting creation success rates
-- Lead capture effectiveness
-- Lead quality scores
-- User interaction patterns
+**"Supabase connection error"**
+```bash
+# Verify credentials
+echo $SUPABASE_URL
+echo $SUPABASE_KEY
+# Check table exists in Supabase dashboard
+```
 
-Access metrics through LangSmith dashboard when tracing is enabled.
+## 📈 Monitoring
+
+**LangSmith Integration:**
+```bash
+export LANGSMITH_TRACING=true
+export LANGSMITH_PROJECT=company_agent
+export LANGSMITH_API_KEY=ls__...
+```
+
+**Supabase Dashboard:**
+- View all leads: `https://supabase.com/dashboard`
+- Real-time updates
+- SQL editor for custom queries
+- Automatic backups
+
+## 🔐 Security
+
+- ✅ OAuth 2.0 for Google Calendar
+- ✅ Environment variable configuration
+- ✅ Supabase Row Level Security (RLS)
+- ✅ No hardcoded credentials
+- ✅ Parameterized SQL queries
+
+## 🎯 Best Practices
+
+1. **Keep documents updated**: Regularly refresh company info in `rag_documents/`
+2. **Monitor lead quality**: Review AI scoring accuracy in Supabase
+3. **Customize prompts**: Adjust `system_prompt.json` for your brand voice
+4. **Test regularly**: Run test conversations before deploying changes
+5. **Backup database**: Use Supabase automatic backups
+
+## 🚀 Deployment
+
+### LangGraph Cloud
+
+```bash
+# Deploy to LangGraph Cloud
+langgraph deploy
+
+# Configure environment variables in dashboard
+# Upload credentials.json and token.json
+```
+
+### Docker
+
+```dockerfile
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["langgraph", "dev"]
+```
+
+## 📝 License
+
+MIT License - See LICENSE file for details
+
+## 🤝 Contributing
+
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+## 📧 Support
+
+For issues or questions:
+- Open a GitHub issue
+- Email: esharehmantech@gmail.com
+
+## 🌟 Roadmap
+
+- [ ] Slack integration
+- [ ] Email automation
+- [ ] Multi-language support
+- [ ] Advanced analytics dashboard
+- [ ] WhatsApp integration
+- [ ] Voice call integration
 
 ---
 
-**Ready to deploy!** Follow the setup steps, test locally, then deploy to LangGraph Cloud for production use.
+**Built with ❤️ using LangGraph, OpenAI, and Supabase**

@@ -190,7 +190,7 @@ def parse_duration(text: str) -> timedelta:
     raise ValueError(f"Unrecognized duration: {text}")
 
 #-----------------------------------------------------------------------------
-# ENHANCED MEETING SCHEDULING WITH LEAD CAPTURE
+# ENHANCED MEETING SCHEDULING WITH LEAD CAPTURE (CONCISE RESPONSES)
 #-----------------------------------------------------------------------------
 
 @tool
@@ -203,14 +203,14 @@ def schedule_by_natural_with_lead_capture(
     project_description: str = "",
     title: str = "",
     description: str = "",
-    timezone: str = "America/New_York"  # Default to EST/EDT
+    timezone: str = "America/New_York"
 ) -> str:
     """
-    Schedule meeting with automatic lead capture
+    Schedule meeting with automatic lead capture (CONCISE response version)
     
     Args:
         start_text: Natural language start time
-        duration_text: Natural language duration
+        duration_text: Natural language duration  
         attendee_name: Full name
         attendee_email: Email address
         organization: Company name
@@ -218,13 +218,14 @@ def schedule_by_natural_with_lead_capture(
         title: Meeting title (auto-generated if empty)
         description: Meeting description (auto-generated if empty)
         timezone: IANA timezone (e.g., 'America/New_York', 'Asia/Karachi')
+    
+    Returns:
+        Simple confirmation message (1-2 lines)
     """
     try:
         start_dt = parse_datetime.invoke({"text": start_text})
         duration = parse_duration.invoke({"text": duration_text})
         end_dt = start_dt + duration
-
-        print(f"🔍 Scheduling meeting for {start_dt.strftime('%A, %B %d at %I:%M %p %Z')}")
 
         if not title:
             title = f"Apec Digital Solutions Consultation - {attendee_name}"
@@ -244,23 +245,18 @@ def schedule_by_natural_with_lead_capture(
             start_time=start_dt,
             end_time=end_dt,
             attendees=[attendee_email],
-            timezone='America/New_York'
+            timezone=timezone
         )
 
         if not event:
-            return "❌ Failed to create meeting. Please check your inputs."
+            return "❌ Failed to create meeting. Please check your inputs and try again."
 
         event_id = event['id']
-        meeting_link = event.get('htmlLink', 'N/A')
-        meet_link = "N/A"
-        if 'conferenceData' in event:
-            entry_points = event['conferenceData'].get('entryPoints', [])
-            if entry_points:
-                meet_link = entry_points[0].get('uri', 'N/A')
 
+        # Capture lead (silently)
         try:
             from tools.lead_tools import auto_capture_meeting_lead
-            lead_capture_result = auto_capture_meeting_lead.invoke({
+            auto_capture_meeting_lead.invoke({
                 "name": attendee_name,
                 "email": attendee_email,
                 "organization": organization,
@@ -268,28 +264,13 @@ def schedule_by_natural_with_lead_capture(
                 "meeting_time": start_dt.strftime('%Y-%m-%d %H:%M %Z'),
                 "meeting_id": event_id
             })
-        except Exception as e:
-            lead_capture_result = f"⚠️ Lead capture failed: {str(e)}"
+        except Exception as lead_error:
+            # Don't fail the whole meeting if lead capture fails
+            print(f"⚠️ Lead capture warning: {lead_error}")
 
-        response_parts = [
-            f"✅ Meeting scheduled successfully!",
-            f"📅 {title}",
-            f"🕐 {start_dt.strftime('%B %d, %Y at %I:%M %p %Z')}",
-            f"⏱️ Duration: {duration_text}",
-            f"👤 Attendee: {attendee_name} ({attendee_email})",
-        ]
-
-        if organization:
-            response_parts.append(f"🏢 Organization: {organization}")
-
-        response_parts.extend([
-            f"🔗 Calendar: {meeting_link}",
-            f"📹 Google Meet: {meet_link}",
-            "",
-            f"🎯 Lead Status: {lead_capture_result}"
-        ])
-
-        return "\n".join(response_parts)
+        # Return simple, professional confirmation
+        formatted_time = start_dt.strftime('%B %d, %Y at %I:%M %p %Z')
+        return f"✅ Meeting scheduled for {formatted_time} with {attendee_email}"
 
     except Exception as e:
         return f"❌ Error scheduling meeting: {str(e)}"

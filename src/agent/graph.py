@@ -1,12 +1,11 @@
 """
 Apex Digital Solutions AI Assistant
-Production-grade LangGraph agent with advanced RAG and CRM
+Production-grade LangGraph agent with strict RAG usage
 
-Professional features:
-- Advanced RAG with query expansion
-- SQLite CRM with proper schema
-- Google Calendar integration
+Key features:
+- Mandatory RAG for all company questions
 - Automatic lead qualification
+- Google Calendar integration
 - Clean architecture
 """
 from langgraph.graph import StateGraph, END
@@ -64,10 +63,10 @@ class AgentState(TypedDict):
 
 # All available tools
 tools = [
-    # Company knowledge (RAG)
+    # Company knowledge (RAG) - PRIORITY TOOL
     retriever_tool,
     
-    # Lead management (SQLite CRM)
+    # Lead management (Supabase CRM)
     auto_capture_meeting_lead,
     store_lead_to_sheet,
     capture_lead_from_conversation,
@@ -83,16 +82,17 @@ tools = [
     parse_duration
 ]
 
-# Initialize LLM
+# Initialize LLM with tools
 model_llm = ChatOpenAI(
     model="gpt-4o-mini",
-    temperature=0.3
+    temperature=0.3,
+    model_kwargs={"top_p": 0.9}  # Add some variety while staying focused
 ).bind_tools(tools=tools)
 
 
 def model_call(state: AgentState) -> AgentState:
     """
-    Main agent reasoning node
+    Main agent reasoning node with strict RAG enforcement
     
     Loads system prompt and generates responses with tool calls
     """
@@ -105,17 +105,20 @@ def model_call(state: AgentState) -> AgentState:
         system_content = prompt_data["content"]
     except Exception as e:
         print(f"⚠️ Could not load system prompt: {e}")
-        # Fallback prompt
+        # Strict fallback prompt
         company_name = os.getenv("COMPANY_NAME", "Apex Digital Solutions")
         system_content = f"""You are the professional AI assistant for {company_name}.
 
-Core capabilities:
-1. Answer company questions using retriever_tool (RAG)
-2. Schedule meetings with automatic lead capture
-3. Qualify and store leads in SQLite CRM
+🚨 CRITICAL: ALWAYS call retriever_tool for ANY question about the company.
 
-Always validate tool parameters before calling.
-Be professional, concise, and helpful."""
+Core capabilities:
+1. Answer company questions using retriever_tool (MANDATORY - use it for EVERY company question)
+2. Schedule meetings with automatic lead capture
+3. Qualify and store leads in Supabase CRM
+
+NEVER answer company questions from memory. ALWAYS use retriever_tool first.
+
+Be professional, concise, and helpful. Format responses with 2-3 bullets maximum."""
     
     system_prompt = SystemMessage(content=system_content)
     
@@ -186,58 +189,51 @@ if __name__ == "__main__":
     print(f"🚀 {os.getenv('COMPANY_NAME', 'Apex Digital Solutions')} AI Assistant")
     print("=" * 60)
     
-    # Test query
-    print("\n📝 Testing agent with sample query...")
+    # Test queries
+    test_queries = [
+        "What services does Apec Digital Solutions offer?",
+        "Do you offer services related to automating business solutions?",
+        "Give me a brief overview of this company"
+    ]
     
-    test_input = {
-        "messages": [{
-            "role": "user",
-            "content": "What services does Apex Digital Solutions offer?"
-        }],
-        "lead_context": {},
-        "meeting_context": {}
-    }
-    
-    try:
-        result = graph.invoke(test_input)
-
-        # Show tool results
-        print("\n" + "=" * 60)
-        print("📋 FULL CONVERSATION FLOW:")
+    for query in test_queries:
+        print(f"\n📝 Testing: {query}")
         print("=" * 60)
-
-        for i, msg in enumerate(result["messages"], 1):
-            if hasattr(msg, 'tool_calls') and msg.tool_calls:
-                print(f"\n🔧 Agent called tools:")
-                for tc in msg.tool_calls:
-                    print(f"   - {tc['name']}({tc['args']})")
+        
+        test_input = {
+            "messages": [{"role": "user", "content": query}],
+            "lead_context": {},
+            "meeting_context": {}
+        }
+        
+        try:
+            result = graph.invoke(test_input)
             
-            if type(msg).__name__ == 'ToolMessage':
-                print(f"\n📚 Retrieved from knowledge base:")
-                print("-" * 60)
-                # Show first 500 chars of tool result
-                content = msg.content[:500] if len(msg.content) > 500 else msg.content
-                print(content)
-                if len(msg.content) > 500:
-                    print(f"\n... (truncated, {len(msg.content)} total chars)")
-                print("-" * 60)
-
-        # Show final response
-        final_response = result["messages"][-1].content
-        print("\n🤖 Final Assistant Response:")
-        print("-" * 60)
-        print(final_response)
-        print("-" * 60)
-        
-        print("\n✅ Agent test completed successfully!")
-        
-    except Exception as e:
-        print(f"\n❌ Test failed: {e}")
+            # Show if retriever_tool was called
+            tool_calls_made = []
+            for msg in result["messages"]:
+                if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                    for tc in msg.tool_calls:
+                        tool_calls_made.append(tc['name'])
+            
+            if tool_calls_made:
+                print(f"✅ Tools called: {', '.join(set(tool_calls_made))}")
+            
+            # Show final response
+            final_response = result["messages"][-1].content
+            print(f"\n🤖 Response:")
+            print("-" * 60)
+            print(final_response)
+            print("-" * 60)
+            
+        except Exception as e:
+            print(f"❌ Test failed: {e}")
+            import traceback
+            traceback.print_exc()
     
     print("\n" + "=" * 60)
     print("📊 System Status:")
     print(f"   Tools available: {len(tools)}")
     print(f"   Graph compiled: ✅")
-    print(f"   Database: {os.getenv('DATABASE_PATH', './apex_crm.db')}")
     print(f"   RAG store: {os.getenv('CHROMA_PERSIST_DIR', './rag_store')}")
     print("=" * 60)

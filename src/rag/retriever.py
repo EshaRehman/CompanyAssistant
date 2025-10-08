@@ -1,12 +1,11 @@
 """
 Professional RAG System for Apec Digital Solutions
 
-Advanced features:
-- Semantic chunking with overlap
-- Metadata filtering
-- Query expansion (LLM rewrites query)
-- Relevance scoring
-- Source citations
+Enhanced with:
+- Better query understanding
+- Contextual answer generation
+- Specific case study extraction
+- Smart content matching
 """
 import os
 import json
@@ -48,7 +47,7 @@ embeddings = OpenAIEmbeddings(
 
 class ProfessionalRAG:
     """
-    Production-grade RAG system
+    Production-grade RAG system with contextual understanding
     """
     
     def __init__(self):
@@ -238,39 +237,6 @@ class ProfessionalRAG:
             return expanded
         except:
             return query
-    
-    def search(
-        self,
-        query: str,
-        use_expansion: bool = True,
-        top_k: int = TOP_K
-    ) -> List[Dict[str, Any]]:
-        """Search knowledge base with advanced features"""
-        if not self.retriever:
-            return []
-        
-        try:
-            search_query = self._expand_query(query) if use_expansion else query
-            
-            docs_with_scores = self.vectorstore.similarity_search_with_relevance_scores(
-                search_query,
-                k=top_k
-            )
-            
-            results = []
-            for doc, score in docs_with_scores:
-                results.append({
-                    "content": doc.page_content,
-                    "metadata": doc.metadata,
-                    "relevance_score": round(score, 3),
-                    "source": doc.metadata.get("source", "Unknown")
-                })
-            
-            return results
-            
-        except Exception as e:
-            print(f"❌ Search error: {e}")
-            return []
 
 
 # Initialize RAG system
@@ -287,7 +253,7 @@ def get_rag_system() -> ProfessionalRAG:
 @tool
 def retriever_tool(query: str) -> str:
     """
-    Search Apec Digital Solutions knowledge base.
+    Search Apec Digital Solutions knowledge base with intelligent context matching.
     
     Use this tool to answer questions about:
     - Company services and capabilities
@@ -295,12 +261,13 @@ def retriever_tool(query: str) -> str:
     - Past projects and case studies
     - Pricing and engagement models
     - Team and company background
+    - Specific service offerings
     
     Args:
         query: Question about Apec Digital Solutions
     
     Returns:
-        Professional answer with source citations
+        Contextual answer with company-specific details
     """
     try:
         rag = get_rag_system()
@@ -311,8 +278,14 @@ def retriever_tool(query: str) -> str:
                 "Please ensure company documents are in the rag_documents folder."
             )
         
-        # Use vectorstore directly with relevance scores
-        docs_with_scores = rag.vectorstore.similarity_search_with_relevance_scores(query, k=3)
+        # Expand query for better matching
+        expanded_query = rag._expand_query(query)
+        
+        # Search with expanded query and lower threshold for specific queries
+        docs_with_scores = rag.vectorstore.similarity_search_with_relevance_scores(
+            expanded_query, 
+            k=5  # Get more results for better context
+        )
         
         if not docs_with_scores:
             return (
@@ -320,30 +293,92 @@ def retriever_tool(query: str) -> str:
                 "Could you rephrase your question or ask about our core services?"
             )
         
-        answer_parts = []
+        # Collect ALL relevant content (lower threshold for specific queries)
+        relevant_content = []
         sources_used = set()
         
-        # Accept results with score >= 0.4 (OpenAI embeddings typically score 0.4-0.7)
+        # Accept results with score >= 0.35 (more lenient for specific queries)
         for doc, score in docs_with_scores:
-            if score >= 0.4:
+            if score >= 0.35:
                 content = doc.page_content.strip()
                 source = doc.metadata.get("source", "Unknown")
                 
-                answer_parts.append(f"**From {source}:**\n{content}\n")
+                relevant_content.append(content)
                 sources_used.add(source)
         
-        if not answer_parts:
-            return "I found some information but it wasn't relevant enough. Could you rephrase your question?"
+        if not relevant_content:
+            return (
+                f"I found some information but it wasn't relevant enough to answer your specific question about '{query}'. "
+                "Could you rephrase or ask about our general services?"
+            )
         
-        answer = "\n---\n\n".join(answer_parts)
-        sources_list = "\n".join([f"• {s}" for s in sorted(sources_used)])
+        # Combine all relevant content (up to 3000 chars for better context)
+        combined_content = "\n\n---\n\n".join(relevant_content[:3])[:3000]
         
-        response = f"{answer}\n\n📚 **Sources:**\n{sources_list}"
+        # Use LLM to create CONTEXTUAL, SPECIFIC answer
+        summary_prompt = f"""You are answering a question about Apec Digital Solutions based on their company documents.
+
+User's Question: {query}
+
+Company Information from Documents:
+{combined_content}
+
+Instructions:
+1. Answer the user's SPECIFIC question directly
+2. Use 2-3 bullet points maximum
+3. Each bullet should be ONE line: "Category – Specific detail with example/number"
+4. Include specific examples, case studies, or numbers from the documents when available
+5. Make it relevant to what they asked (don't give generic service lists)
+6. Keep total response under 150 words
+7. If they ask about a specific service, focus on that service with details
+8. Sound professional and conversational
+
+Format:
+[Brief intro sentence]
+• Bullet 1 – Specific capability with example/result
+• Bullet 2 – Another relevant capability with detail
+• Bullet 3 (optional) – Third point if needed
+
+[Optional follow-up question]
+
+Example for "Do you do business automation?":
+"Yes, we specialize in business automation:
+• AI-Powered Chatbots – Reduced support costs 60% for TechRetail's e-commerce platform
+• Process Automation – Saved $2M annually for manufacturing clients with ML forecasting
+• Workflow Systems – Built multi-agent LangChain solutions for enterprise clients
+
+Would you like to discuss your automation needs?"
+
+Now answer their question using the company information provided."""
         
-        return response
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a professional company representative. Always use specific details from documents. Be concise but informative."
+                },
+                {
+                    "role": "user", 
+                    "content": summary_prompt
+                }
+            ],
+            temperature=0.4,  # Slightly higher for more natural responses
+            max_tokens=300
+        )
+        
+        contextual_answer = response.choices[0].message.content.strip()
+        
+        # Add compact source attribution
+        sources_list = ", ".join(sorted(sources_used))
+        final_response = f"{contextual_answer}\n\n*Source: {sources_list}*"
+        
+        return final_response
         
     except Exception as e:
         print(f"❌ Retriever tool error: {e}")
+        import traceback
+        traceback.print_exc()
         return (
             f"I encountered an error searching for information about '{query}'. "
             "Please try rephrasing your question."
@@ -357,12 +392,19 @@ if __name__ == "__main__":
     
     rag = get_rag_system()
     
-    test_query = "What services does Apec Digital Solutions offer?"
-    print(f"\n🔍 Test Query: {test_query}")
-    print("\n" + "=" * 50)
+    # Test multiple queries
+    test_queries = [
+        "What services does Apec Digital Solutions offer?",
+        "Do you offer services related to automating business solutions?",
+        "What's your experience with AI and machine learning?",
+        "Give me a brief overview of this company"
+    ]
     
-    result = retriever_tool.invoke({"query": test_query})
-    print(result)
+    for query in test_queries:
+        print(f"\n🔍 Query: {query}")
+        print("=" * 50)
+        result = retriever_tool.invoke({"query": query})
+        print(result)
+        print("\n" + "=" * 50)
     
-    print("\n" + "=" * 50)
-    print("✅ RAG system test complete!")
+    print("\n✅ RAG system test complete!")
